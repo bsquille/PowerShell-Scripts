@@ -7,8 +7,8 @@ Start-Process powershell -Verb runAs -ArgumentList $arguments
 Break
 }
 
-[int]$temp = 0
-While ($temp -ne 9) {
+[int]$temp = -1
+While ($temp -ne 0) {
 
 echo "1 - Create new host (A record)"
 echo "2 - Remove a host (A record)"
@@ -17,7 +17,9 @@ echo "4 - Remove an alias (CNAME)"
 echo "5 - Add new Primary Forward Lookup Zone"
 echo "6 - Remove Primary Lookup Zone (Forward or Reverse)"
 echo "7 - Add new Primary Reverse Lookup Zone"
-echo "9 - Exit"
+echo "8 - Create PTR for Reverse Lookup Zone"
+echo "9 - Remove PTR for Reverse Lookup Zone"
+echo "0 - Exit"
 
 $switch = read-host
 
@@ -151,8 +153,31 @@ Switch ($switch) {
 	
 	Break
 	}
-	9 { 
-	$temp = 9 
+	8 {
+		Get-DnsServerZone
+		echo "`nEnter the name of the zone you would like to add a PTR to. ex.(1.168.192.inaddr.arpa)"
+		$zone = read-host
+		echo "Enter the host portion of the IP address. ex.(If the IP address is 192.168.1.25/24, enter 25)"
+		[int]$IP = read-host
+		echo "Enter the full domain name of the host. ex.(dc1.test.com)"
+		$name = read-host
+		Add-DnsServerResourceRecordPtr -Name $IP -PtrDomainName $name -ZoneName $zone
+		Get-DnsServerResourceRecord -ZoneName $zone -RRType Ptr
+	Break
+	}
+	9 {
+		Get-DnsServerZone
+		echo "`nEnter the name of the zone you would like to add a PTR to. ex.(1.168.192.inaddr.arpa)"
+		$zone = read-host
+		Get-DnsServerResourceRecord -ZoneName $zone -RRType Ptr
+		echo "`nEnter the HostName of the PTR you would like to remove"
+		$name = read-host
+		Remove-DnsServerResourceRecord -Name $name -RRType Ptr -ZoneName $zone
+		Get-DnsServerResourceRecord -ZoneName $zone -RRType Ptr
+	Break
+	}
+	0 { 
+	$temp = 0 
 	}
 	default { 
 	echo "Invalid input" 
